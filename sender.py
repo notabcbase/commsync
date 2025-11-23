@@ -31,19 +31,43 @@ from protocol import Frame, encode_frame, compute_sha256
 class KeyboardTyper:
     """Handles typing characters into the focused window."""
 
-    def __init__(self, char_delay: float = 0.01):
+    def __init__(self, char_delay: float = 0.01, modifier_delay: float = 0.005):
         """
         Initialize keyboard controller.
 
         Args:
             char_delay: Delay between characters in seconds (adjust if VNC drops chars)
+            modifier_delay: Extra delay after releasing modifier keys to prevent sticky keys
         """
         self.keyboard = Controller()
         self.char_delay = char_delay
+        self.modifier_delay = modifier_delay
+
+    def release_all_modifiers(self):
+        """
+        Explicitly release all modifier keys to prevent sticky key issues.
+
+        This helps prevent situations where Shift, Ctrl, Alt, etc. remain pressed
+        between characters, causing unexpected capitalization or modified characters.
+        """
+        modifiers = [Key.shift, Key.shift_l, Key.shift_r,
+                     Key.ctrl, Key.ctrl_l, Key.ctrl_r,
+                     Key.alt, Key.alt_l, Key.alt_r, Key.alt_gr]
+
+        for modifier in modifiers:
+            try:
+                self.keyboard.release(modifier)
+            except:
+                # Some modifiers might not exist on all platforms
+                pass
+
+        # Small delay to ensure modifiers are fully released
+        if self.modifier_delay > 0:
+            time.sleep(self.modifier_delay)
 
     def type_char(self, c: str):
         """
-        Type a single character.
+        Type a single character with proper modifier key handling.
 
         Args:
             c: Character to type (or '\n' for Enter)
@@ -54,8 +78,15 @@ class KeyboardTyper:
             time.sleep(self.char_delay)
             return
 
+        # Type the character
         self.keyboard.press(c)
         self.keyboard.release(c)
+
+        # Explicitly release all modifier keys to prevent sticky keys
+        # This is crucial for preventing Shift/Ctrl/Alt from staying pressed
+        self.release_all_modifiers()
+
+        # Wait before next character
         time.sleep(self.char_delay)
 
     def type_string(self, s: str):
@@ -65,8 +96,14 @@ class KeyboardTyper:
         Args:
             s: String to type
         """
+        # Ensure clean start - release any stuck modifiers
+        self.release_all_modifiers()
+
         for ch in s:
             self.type_char(ch)
+
+        # Ensure clean end - release any stuck modifiers
+        self.release_all_modifiers()
 
 
 def read_clipboard_bytes(encoding: str = "utf-8") -> bytes:
@@ -163,6 +200,12 @@ def main():
         default="utf-8",
         help="Text encoding (default: utf-8)"
     )
+    parser.add_argument(
+        "--modifier-delay",
+        type=float,
+        default=0.005,
+        help="Extra delay after releasing modifier keys to prevent sticky keys (default: 0.005)"
+    )
 
     args = parser.parse_args()
 
@@ -170,8 +213,11 @@ def main():
         # Read clipboard
         data = read_clipboard_bytes(encoding=args.encoding)
 
-        # Create typer
-        typer = KeyboardTyper(char_delay=args.char_delay)
+        # Create typer with modifier key protection
+        typer = KeyboardTyper(
+            char_delay=args.char_delay,
+            modifier_delay=args.modifier_delay
+        )
 
         # Send data
         send_data(

@@ -182,14 +182,23 @@ python sender.py --chunk-size 64
 # Slow down typing (if VNC drops characters)
 python sender.py --char-delay 0.02
 
+# Fix sticky modifier keys (unexpected capitalization)
+python sender.py --modifier-delay 0.01
+
 # Change focus delay
 python sender.py --focus-delay 10.0
 
 # Use different text encoding
 python sender.py --encoding latin-1
 
-# Combine options
-python sender.py --chunk-size 32 --char-delay 0.015 --focus-delay 8.0
+# Combine options for optimal reliability
+python sender.py --chunk-size 32 --char-delay 0.015 --modifier-delay 0.01 --focus-delay 8.0
+
+# Fast transfer (good VNC connection)
+python sender.py --chunk-size 64 --char-delay 0.005 --modifier-delay 0.003
+
+# Safe transfer (problematic VNC connection)
+python sender.py --chunk-size 32 --char-delay 0.03 --modifier-delay 0.02
 ```
 
 ### Receiver Options
@@ -303,6 +312,29 @@ After transfer completes:
 
 ## Troubleshooting
 
+### Problem: Sticky modifier keys (unexpected capitalization or special characters)
+
+**Symptoms**:
+- Random characters become capitalized (e.g., "HeLLo" instead of "Hello")
+- Unexpected special characters appear
+- Shift, Ctrl, or Alt keys seem to "stick" between characters
+
+**Cause**: VNC or remote desktop doesn't release modifier keys quickly enough between characters, causing Shift/Ctrl/Alt to remain pressed.
+
+**Solution**:
+```bash
+# Increase modifier delay (default is 0.005s)
+python sender.py --modifier-delay 0.01
+
+# For severe cases, combine with increased character delay
+python sender.py --char-delay 0.02 --modifier-delay 0.015
+
+# For very slow VNC connections
+python sender.py --char-delay 0.03 --modifier-delay 0.02 --chunk-size 32
+```
+
+**How it works**: The sender now explicitly releases all modifier keys (Shift, Ctrl, Alt) after each character and waits for the specified modifier delay to ensure they're fully released before the next character.
+
 ### Problem: Characters are being dropped
 
 **Solution**: Increase the character delay on the sender:
@@ -317,28 +349,34 @@ python sender.py --char-delay 0.02
 python sender.py --char-delay 0.005 --chunk-size 64
 ```
 
+Note: Lower delays may increase the risk of sticky modifier keys on some VNC implementations.
+
 ### Problem: CRC mismatch errors
 
 **Causes**:
 - VNC connection is unstable
 - Character delay is too low
 - Network latency issues
+- Sticky modifier keys causing character corruption
 
 **Solution**:
 1. Increase `--char-delay`
-2. Ensure stable VNC connection
-3. Reduce `--chunk-size` for smaller frames
+2. Increase `--modifier-delay` if you see unexpected capitalization
+3. Ensure stable VNC connection
+4. Reduce `--chunk-size` for smaller frames
 
 ### Problem: Size or SHA256 mismatch
 
 **Causes**:
 - Frames were lost during transfer
 - Transfer was interrupted
+- Character corruption from sticky modifiers
 
 **Solution**:
 - Check that VNC window maintained focus
 - Restart both receiver and sender
 - Increase delays if network is slow
+- Use `--modifier-delay 0.01` or higher to prevent character corruption
 
 ## Protocol Specifications
 

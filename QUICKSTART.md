@@ -184,15 +184,21 @@ Try this simple test first:
 ### "Clipboard is empty"
 - Make sure you copied text to clipboard before running sender.py
 
+### Sticky keys (random capitalization like "HeLLo")
+- **Most common issue!** Modifier keys (Shift/Ctrl/Alt) stick between characters
+- Fix: `python sender.py --modifier-delay 0.01`
+- For severe cases: `python sender.py --char-delay 0.02 --modifier-delay 0.015`
+
 ### Characters appearing wrong
 - Increase delay: `python sender.py --char-delay 0.02`
 
 ### CRC mismatch errors
-- VNC connection may be slow
-- Try: `python sender.py --char-delay 0.02 --chunk-size 32`
+- VNC connection may be slow or modifiers are sticking
+- Try: `python sender.py --char-delay 0.02 --modifier-delay 0.01 --chunk-size 32`
 
 ### Transfer too slow
 - Speed up: `python sender.py --char-delay 0.005 --chunk-size 64`
+- Note: Very fast transfers may cause sticky modifier keys
 
 ## Next Steps
 
