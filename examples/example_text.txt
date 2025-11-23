@@ -1,0 +1,13 @@
+Hello, World!
+
+This is a sample text file for testing the CommSync transfer system.
+
+It contains:
+- Multiple lines
+- Unicode characters: 世界 🌍 Привет
+- Special symbols: @#$%^&*()
+- Numbers: 1234567890
+
+The quick brown fox jumps over the lazy dog.
+
+End of sample text.

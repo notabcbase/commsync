@@ -1,0 +1,7 @@
+# Dependencies for Computer A (sender)
+# Required for clipboard access and keyboard emulation
+pynput>=1.7.6
+pyperclip>=1.8.2
+
+# Note: Computer B (receiver) has no external dependencies
+# It only uses Python standard library modules
