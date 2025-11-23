@@ -2,13 +2,17 @@
 
 Get up and running with CommSync in 5 minutes.
 
+Choose your preferred method:
+- **Option 1**: Command-Line Receiver (fastest setup, no dependencies on Computer B)
+- **Option 2**: Web UI Receiver (user-friendly, visual progress tracking)
+
 ## Prerequisites
 
 - Python 3.7 or higher on both computers
 - VNC connection from Computer A to Computer B
 - On Computer A: `pip install pynput pyperclip`
 
-## Setup
+## Setup - Option 1: Command-Line Receiver
 
 ### Computer B (Receiver - VNC Target)
 
@@ -78,6 +82,80 @@ Check the received file:
 cat received.txt
 ```
 
+---
+
+## Setup - Option 2: Web UI Receiver (Recommended)
+
+### Computer B (Receiver - VNC Target)
+
+1. Copy files to Computer B:
+   ```bash
+   # Copy these files:
+   protocol.py
+   web_receiver.py
+   templates/
+   static/
+   ```
+
+2. Install web dependencies:
+   ```bash
+   pip install -r requirements-web.txt
+   ```
+
+3. Start the web receiver:
+   ```bash
+   python web_receiver.py
+   ```
+
+   You should see:
+   ```
+   Starting server on http://0.0.0.0:5000
+   ```
+
+4. Open a web browser and navigate to:
+   ```
+   http://localhost:5000
+   ```
+
+5. Click **"Start Receiving"** button in the web interface
+
+6. The input area will be focused and ready
+
+### Computer A (Sender - VNC Controller)
+
+Same setup as Option 1:
+
+1. Copy files: `protocol.py` and `sender.py`
+2. Install dependencies: `pip install -r requirements-sender.txt`
+3. Copy text to clipboard
+4. Run `python sender.py`
+5. Focus the VNC window showing the **web browser** with the input area
+6. Watch real-time progress!
+
+### Verification (Web UI)
+
+The web interface will show:
+
+```
+✓ Status: Complete
+  Frames Received: 30
+  Bytes Received: 123 bytes
+  Progress: [████████████████████] 100%
+
+Activity Log:
+[14:23:45] Session started. Expecting 123 bytes
+[14:23:46] Received frame 10
+[14:23:47] Received frame 20
+[14:23:48] Transfer verified successfully!
+
+Transfer Complete ✓
+[Download Received Data]
+```
+
+Click the download button to save your file!
+
+---
+
 ## First Test - Simple Text
 
 Try this simple test first:
@@ -118,9 +196,11 @@ Try this simple test first:
 
 ## Next Steps
 
-- Read the full [README.md](README.md) for advanced usage
+- Read the full [README.md](README.md) for advanced usage and protocol details
+- Check out [WEB_UI_GUIDE.md](WEB_UI_GUIDE.md) for comprehensive web UI documentation
 - Run tests: `python test_protocol.py && python test_e2e.py`
-- Try the demo: `bash examples/demo.sh`
+- Try the CLI demo: `bash examples/demo.sh`
+- Test the web UI: `python examples/test_web_ui.py` and paste into web interface
 
 ## Getting Help
 
@@ -133,6 +213,7 @@ If you run into issues:
 
 ## What's Happening
 
+**Command-Line Mode:**
 ```
 Computer A                    Computer B
 ┌─────────┐                   ┌─────────┐
@@ -151,4 +232,23 @@ Computer A                    Computer B
                               └─────────┘
 ```
 
+**Web UI Mode:**
+```
+Computer A                    Computer B
+┌─────────┐                   ┌─────────┐
+│Clipboard│                   │ Browser │
+└────┬────┘                   │ Web UI  │
+     │                        └────▲────┘
+     ▼                             │
+┌─────────┐   VNC Keystrokes  ┌────┴────┐
+│ sender  ├──────────────────►│  Flask  │
+│  .py    │   (to browser)    │ Server  │
+└─────────┘                   └────┬────┘
+                                   │
+                              ┌────▼────┐
+                              │Download │
+                              └─────────┘
+```
+
 Each keystroke is verified with checksums to ensure lossless transfer!
+Real-time progress updates keep you informed every step of the way.

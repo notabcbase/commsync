@@ -15,6 +15,8 @@ CommSync enables reliable one-way communication from Computer A to Computer B wh
 ✅ **Error Detection**: Immediate failure on any corruption
 ✅ **Simple Setup**: Pure Python with minimal dependencies
 ✅ **Configurable**: Adjustable chunk sizes and timing parameters
+✅ **Web UI**: Real-time browser-based interface with visual progress tracking
+✅ **Dual Mode**: Command-line or web interface receiver options
 
 ## How It Works
 
@@ -192,6 +194,7 @@ python sender.py --chunk-size 32 --char-delay 0.015 --focus-delay 8.0
 
 ### Receiver Options
 
+**Command-Line Receiver:**
 ```bash
 # Save to specific file
 python receiver.py -o output.txt -e utf-8
@@ -201,6 +204,21 @@ python receiver.py -o image.png
 
 # Display as text with specific encoding
 python receiver.py -e utf-8
+```
+
+**Web UI Receiver:**
+```bash
+# Start on custom port
+python web_receiver.py --port 8080
+
+# Bind to localhost only (more secure)
+python web_receiver.py --host 127.0.0.1
+
+# Enable debug mode
+python web_receiver.py --debug
+
+# Combined options
+python web_receiver.py --host 0.0.0.0 --port 8000
 ```
 
 ## Examples
@@ -252,6 +270,36 @@ On Computer B:
 # Receive and decode
 python receiver.py -e utf-8 | base64 -d > image.png
 ```
+
+### Example 4: Transfer Using Web UI (Recommended)
+
+On Computer B:
+```bash
+# Start web receiver
+python web_receiver.py
+
+# Open browser to http://localhost:5000
+# Click "Start Receiving" button
+# Focus the input area
+```
+
+On Computer A:
+```bash
+# Copy text to clipboard
+cat document.txt | xclip -selection clipboard
+
+# Run sender
+python sender.py
+
+# Focus VNC window showing the web browser
+# Watch real-time progress in the web UI
+```
+
+After transfer completes:
+- View real-time progress bar and statistics
+- See data preview in the web interface
+- Click "Download Received Data" button
+- File is saved as `received.txt` or `received.bin`
 
 ## Troubleshooting
 
@@ -331,6 +379,7 @@ The receiver will exit with error code 1 and detailed message if:
 
 ## Architecture
 
+### Command-Line Mode
 ```
 ┌─────────────┐                    ┌─────────────┐
 │ Computer A  │                    │ Computer B  │
@@ -349,6 +398,35 @@ The receiver will exit with error code 1 and detailed message if:
 │  │Keyboard│ │                    │  │  File  │ │
 │  │Emulator│ │                    │  │ Output │ │
 │  └────────┘ │                    │  └────────┘ │
+└─────────────┘                    └─────────────┘
+```
+
+### Web UI Mode
+```
+┌─────────────┐                    ┌─────────────┐
+│ Computer A  │                    │ Computer B  │
+│  (Sender)   │                    │ (Receiver)  │
+│             │                    │             │
+│  ┌────────┐ │                    │ ┌─────────┐ │
+│  │Clipboard│ │                    │ │ Browser │ │
+│  └───┬────┘ │                    │ │Web UI   │ │
+│      │      │                    │ └────▲────┘ │
+│  ┌───▼────┐ │   VNC Keystrokes   │      │      │
+│  │Protocol│ ├────────────────────┤  WebSocket  │
+│  │Encoder │ │    (to browser)    │      │      │
+│  └───┬────┘ │                    │ ┌────▼────┐ │
+│      │      │                    │ │  Flask  │ │
+│  ┌───▼────┐ │                    │ │ Server  │ │
+│  │Keyboard│ │                    │ └────┬────┘ │
+│  │Emulator│ │                    │      │      │
+│  └────────┘ │                    │ ┌────▼────┐ │
+│             │                    │ │Protocol │ │
+│             │                    │ │Decoder  │ │
+│             │                    │ └────┬────┘ │
+│             │                    │      │      │
+│             │                    │ ┌────▼────┐ │
+│             │                    │ │Download │ │
+│             │                    │ └─────────┘ │
 └─────────────┘                    └─────────────┘
 ```
 
@@ -376,15 +454,27 @@ For a 10KB text file:
 
 ## Testing
 
-A test suite is provided to verify functionality:
+A comprehensive test suite is provided to verify functionality:
 
 ```bash
-# Run basic protocol tests
+# Run basic protocol tests (CRC, encoding, decoding)
 python test_protocol.py
 
-# Run end-to-end simulation tests
+# Run end-to-end simulation tests (complete transfers)
 python test_e2e.py
+
+# Generate test data for web UI (no VNC needed)
+python examples/test_web_ui.py
+# Then paste output into web UI at http://localhost:5000
 ```
+
+All tests should pass before deployment. The test suite covers:
+- Protocol encoding/decoding
+- CRC-16 and SHA256 verification
+- Frame parsing and validation
+- Error detection and handling
+- Unicode and binary data support
+- Large transfers and edge cases
 
 ## Contributing
 
@@ -404,9 +494,12 @@ MIT License - see LICENSE file for details
 ## Acknowledgments
 
 Built using:
-- [pynput](https://github.com/moses-palmer/pynput) - Keyboard control
-- [pyperclip](https://github.com/asweigart/pyperclip) - Clipboard access
-- Python standard library for protocol implementation
+- [pynput](https://github.com/moses-palmer/pynput) - Keyboard control (sender)
+- [pyperclip](https://github.com/asweigart/pyperclip) - Clipboard access (sender)
+- [Flask](https://flask.palletsprojects.com/) - Web framework (web UI)
+- [Flask-SocketIO](https://flask-socketio.readthedocs.io/) - WebSocket support (web UI)
+- [Socket.IO](https://socket.io/) - Real-time bidirectional communication (web UI)
+- Python standard library for core protocol implementation
 
 ## FAQ
 
@@ -427,3 +520,15 @@ A: CRC-16 provides sufficient error detection for our frame sizes while keeping 
 
 **Q: Can Computer B send acknowledgments back?**
 A: Not in the current design. The protocol is one-way. For bidirectional communication, you'd need to run instances in both directions or add a visual ACK mechanism.
+
+**Q: Should I use the command-line or web UI receiver?**
+A: The web UI is recommended for most users as it provides real-time visual feedback, progress tracking, and easier data download. Use the command-line receiver for headless systems, scripted operations, or when you don't want to install web dependencies.
+
+**Q: Can multiple people watch the same transfer on the web UI?**
+A: Yes! The web UI supports multiple concurrent browser connections. All connected users will see real-time updates of the same transfer.
+
+**Q: Does the web UI work on mobile devices?**
+A: Yes, the web interface is fully responsive and works on tablets and smartphones. However, you'll need the sender running on a computer with keyboard emulation capabilities.
+
+**Q: What happens if I close the web browser during a transfer?**
+A: The server maintains the session, but the browser loses the WebSocket connection. Refresh the page to reconnect, but you'll need to restart the transfer from the beginning as the input buffer is lost.
