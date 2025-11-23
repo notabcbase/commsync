@@ -69,17 +69,41 @@ Copy to Computer A:
 
 ### Computer B (Receiver)
 
+You have two options for receiving data:
+
+#### Option 1: Command-Line Receiver (No Dependencies)
+
 **No external dependencies required!** Uses only Python standard library.
 
 Copy to Computer B:
 - `protocol.py`
 - `receiver.py`
 
+#### Option 2: Web UI Receiver (Recommended)
+
+**Web-based interface with real-time visualization!**
+
+Install web dependencies:
+```bash
+pip install -r requirements-web.txt
+# Installs: Flask, Flask-SocketIO, python-socketio, eventlet
+```
+
+Copy to Computer B:
+- `protocol.py`
+- `web_receiver.py`
+- `templates/` directory
+- `static/` directory
+
+See [WEB_UI_GUIDE.md](WEB_UI_GUIDE.md) for complete web UI documentation.
+
 ## Usage
 
 ### Basic Workflow
 
 #### Step 1: Start Receiver on Computer B
+
+**Option A: Command-Line Receiver**
 
 Open a terminal on Computer B and run:
 
@@ -95,6 +119,28 @@ python receiver.py -e utf-8
 ```
 
 The receiver will wait for the transfer to begin.
+
+**Option B: Web UI Receiver (Recommended)**
+
+Start the web server on Computer B:
+
+```bash
+python web_receiver.py
+```
+
+Then open a web browser and navigate to:
+```
+http://localhost:5000
+```
+
+Click **"Start Receiving"** and focus the input area. The web interface provides:
+- Real-time progress bar
+- Live activity log
+- Automatic verification
+- One-click download
+- Visual status indicators
+
+See [WEB_UI_GUIDE.md](WEB_UI_GUIDE.md) for detailed web UI instructions.
 
 #### Step 2: Prepare Sender on Computer A
 
